@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package promotion;
+
+option go_package = "promotion-service/proto";
+
+message UserPointEvent {
+  string command_id = 1;
+  string user_id    = 2;
+  int64  point      = 3;
+  string created_at = 4;
+}
+
+message PromotionActivatedEvent {
+  string promotion_id = 1;
+  string user_id      = 2;
+  string activated_at = 3;
+}

@@ -1,0 +1,42 @@
+syntax = "proto3";
+
+package promotion;
+
+option go_package = "promotion-service/proto";
+
+// ===== REQUEST =====
+message ApplyPromotionRequest {
+  string user_id = 1;
+  string promotion_id = 2;
+  double order_amount = 3;
+}
+
+// ===== RESPONSE =====
+message ApplyPromotionResponse {
+  bool valid = 1;
+  double discount = 2;
+  double final_amount = 3;
+  string message = 4;
+}
+
+// ===== LIST =====
+message GetAvailablePromotionsRequest {
+  string user_id = 1;
+  double order_amount = 2;
+}
+
+message PromotionItem {
+  string id = 1;
+  string title = 2;
+  double discount = 3;
+}
+
+message GetAvailablePromotionsResponse {
+  repeated PromotionItem promotions = 1;
+}
+
+// ===== SERVICE =====
+service PromotionService {
+  rpc ApplyPromotion (ApplyPromotionRequest) returns (ApplyPromotionResponse);
+  rpc GetAvailablePromotions (GetAvailablePromotionsRequest) returns (GetAvailablePromotionsResponse);
+}

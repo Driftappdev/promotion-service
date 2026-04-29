@@ -1,0 +1,38 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: promotion-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: promotion
+      POSTGRES_PASSWORD: promotion
+      POSTGRES_DB: promotion_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./migrations:/docker-entrypoint-initdb.d
+    networks:
+      - promotion-network
+
+  promotion-service:
+    build: .
+    container_name: promotion-service
+    restart: always
+    depends_on:
+      - postgres
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./config.yaml:/app/config.yaml
+    networks:
+      - promotion-network
+
+volumes:
+  pgdata:
+
+networks:
+  promotion-network:
+    driver: bridge

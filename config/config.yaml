@@ -1,0 +1,38 @@
+app:
+  name: promotion-service
+  env: dev
+
+db:
+  host: postgres
+  port: 5432
+  user: promotion
+  password: promotion
+  name: promotion_db
+  sslmode: disable
+  max_open_conns: 25
+  max_idle_conns: 10
+  conn_max_lifetime_minutes: 30
+
+server:
+  port: 8080
+  read_timeout_seconds: 10
+  write_timeout_seconds: 10
+  idle_timeout_seconds: 60
+  shutdown_timeout_seconds: 10
+
+kafka:
+  brokers: []
+  client_id: ""
+  topic_user_point: ""
+
+nats:
+  enabled: true
+  url: nats://nats:4222
+  stream: ADMIN_EVENTS
+  subject: admin.promotion.*
+  durable: promotion-admin-consumer
+
+redis:
+  addr: ""
+  password: ""
+  db: 0

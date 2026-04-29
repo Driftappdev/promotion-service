@@ -1,0 +1,5 @@
+﻿.gocache/
+node_modules/
+dist/
+build/
+*.log
