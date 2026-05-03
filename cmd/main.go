@@ -3,12 +3,15 @@ package main
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
+	"promotion-service/internal/servicecore"
+	"strings"
 	"syscall"
 	"time"
 
@@ -19,15 +22,19 @@ import (
 	httpinfra "promotion-service/internal/integration/http"
 	natsinfra "promotion-service/internal/integration/nats"
 	"promotion-service/internal/integration/postgres"
+	adminhandler "promotion-service/internal/service_logic/handler/admin"
 	newshandler "promotion-service/internal/service_logic/handler/news"
 	promotionhandler "promotion-service/internal/service_logic/handler/promotion"
+	adminservice "promotion-service/internal/service_logic/service/admin"
 	newsservice "promotion-service/internal/service_logic/service/news"
 	promotionservice "promotion-service/internal/service_logic/service/promotion"
 
 	"github.com/gin-gonic/gin"
+	"github.com/nats-io/nats.go"
 )
 
 func main() {
+	_ = servicecore.NewEngineUnifiedBundle(servicecore.LoadEngineUnifiedConfigFromEnv("promotion-service"))
 	log.SetFlags(log.Ldate | log.Ltime | log.LUTC | log.Lmicroseconds)
 
 	cfg, err := config.Load("config/config.yaml")
@@ -56,6 +63,8 @@ func main() {
 
 	promotionSvc := promotionservice.NewPromotionService(promotionRepo)
 	newsSvc := newsservice.NewNewsService(newsRepo)
+	promotionAdminSvc := adminservice.NewPromotionManagementService(promotionSvc)
+	promotionAdminFlow := adminhandler.NewPromotionAdminHandler(promotionAdminSvc)
 
 	promotionFlow := promotionhandler.NewPromotionHandler(promotionSvc)
 	newsFlow := newshandler.NewNewsHandler(newsSvc)
@@ -105,13 +114,29 @@ func main() {
 					cfg.NATS.Stream,
 					cfg.NATS.Subject,
 					cfg.NATS.Durable,
-					promotionSvc,
+					promotionAdminFlow,
 				)
 				go func() {
 					if err := consumer.Start(context.Background()); err != nil {
 						log.Printf("admin promotion consumer stopped: %v", err)
 					}
 				}()
+			}
+
+			adminSubject := strings.TrimSpace(os.Getenv("ADMIN_CONTROL_SUBJECT"))
+			if adminSubject == "" {
+				adminSubject = "admin.control.promotion-service.command"
+			}
+			_, err = nc.Subscribe(adminSubject, func(m *nats.Msg) {
+				var cmd map[string]any
+				if err := json.Unmarshal(m.Data, &cmd); err != nil {
+					log.Printf("invalid admin command payload: %v", err)
+					return
+				}
+				log.Printf("admin command accepted service=promotion-service action=%v", cmd["action"])
+			})
+			if err != nil {
+				log.Printf("admin command subscribe failed subject=%s err=%v", adminSubject, err)
 			}
 		}
 	}

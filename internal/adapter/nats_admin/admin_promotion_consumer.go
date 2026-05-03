@@ -9,7 +9,7 @@ import (
 	"time"
 
 	httpport "promotion-service/internal/interface/http"
-	promosvc "promotion-service/internal/service_logic/service/promotion"
+	adminhandler "promotion-service/internal/service_logic/handler/admin"
 	"promotion-service/internal/servicecore/queue"
 
 	"github.com/nats-io/nats.go"
@@ -28,7 +28,7 @@ type AdminPromotionConsumer struct {
 	stream  string
 	subject string
 	durable string
-	svc     *promosvc.PromotionService
+	svc     *adminhandler.PromotionAdminHandler
 	inbox   *queue.Inbox
 	dlq     *queue.DLQ
 }
@@ -38,7 +38,7 @@ func NewAdminPromotionConsumer(
 	stream string,
 	subject string,
 	durable string,
-	svc *promosvc.PromotionService,
+	svc *adminhandler.PromotionAdminHandler,
 ) *AdminPromotionConsumer {
 	inbox := queue.NewInbox(queue.InboxConfig{
 		DedupeEnabled:      false,
@@ -149,8 +149,7 @@ func (c *AdminPromotionConsumer) handle(ctx context.Context, subject string, pay
 		if t := getString(data, "end_at"); t != "" {
 			req.EndAt = &t
 		}
-		_, err := c.svc.Create(ctx, req)
-		return err
+		return c.svc.CreatePromotion(ctx, req)
 	case topicPromotionUpdated:
 		// Current service has no update endpoint in service layer; keep backward compatibility as no-op.
 		return nil

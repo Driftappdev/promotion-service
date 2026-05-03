@@ -1,0 +1,14 @@
+﻿engine_unified:
+  profile: "engine-unified"
+  timeout_seconds: 30
+  retry:
+    max_attempts: 3
+    initial_backoff_ms: 100
+  tx_uow:
+    enabled: true
+  inbox:
+    enabled: true
+  outbox:
+    enabled: true
+  dlq:
+    enabled: true
